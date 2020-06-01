@@ -1,0 +1,264 @@
+Parameters:
+  pCICDStack:
+    AllowedPattern: '[A-Za-z0-9-/.]{1,50}'
+    Description: Name of your CICD CloudFormation stack to cross reference in this nested stack.
+    MaxLength: '50'
+    MinLength: '1'
+    Type: String
+  pTestScriptsLocation:
+    AllowedPattern: '[A-Za-z0-9-/.]{1,100}'
+    Description: The S3 prefix for your tests scripts.
+    MaxLength: '100'
+    MinLength: '1'
+    Default: mlops-staging/tests/mlops-test-runner.zip
+    Type: String
+  pAppDirectory:
+    AllowedPattern: '[A-Za-z0-9-/.]{1,100}'
+    Description: The S3 prefix for your microservice code.
+    MaxLength: '100'
+    MinLength: '1'
+    Default: mlops-staging/app/simple-microservice.zip
+    Type: String
+  pDeployInVpc:
+    Type: 'String'
+    AllowedValues: ["true","false"]
+    Default: "false"
+    Description: "Set to true if you want to run your app in a VPC."
+Conditions:
+  CreateVPCECondition:
+    !Equals
+      - !Ref pDeployInVpc
+      - "true"
+Resources:
+  APIIntegrationRole:
+    DependsOn: 
+      - MicroserviceInTest
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: mlops-api-role-test
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: mlops-api-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  -  "lambda:InvokeFunction"
+                Resource: !GetAtt MicroserviceInTest.Arn
+  AppApiInTest:
+    Type: 'AWS::ApiGateway::RestApi'
+    DependsOn:
+      - APIIntegrationRole
+    Properties:
+      Name: mlops-microservice-api-test
+      Body:
+        swagger: '2.0'  
+        paths:
+          /mlops-microservice-api:
+            post:
+              produces:
+                - "application/json"
+              schemes :
+                - https
+              responses:
+                "200":
+                  description: "200 response"
+                  schema:
+                    $ref: "#/definitions/Empty"
+              x-amazon-apigateway-integration:
+                credentials: !GetAtt APIIntegrationRole.Arn
+                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MicroserviceInTest.Arn}/invocations'
+                responses:
+                  default:
+                    statusCode: "200"
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                contentHandling: "CONVERT_TO_TEXT"
+                type: aws
+        definitions:
+          Empty:
+            type: "object"
+      Parameters:
+        endpointConfigurationTypes: REGIONAL
+  ApiDeploymentInTest:
+    DependsOn:
+      - AppApiInTest
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      RestApiId: !Ref AppApiInTest
+      StageDescription:
+        CacheTtlInSeconds: 3600
+        CacheClusterEnabled: 'true'
+        CacheClusterSize: '1.6'
+        TracingEnabled: 'true'
+      StageName: Test
+  MicroserviceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: mlops-app-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sagemaker:DescribeEndpointConfig'
+                  - 'sagemaker:DescribeEndpoint'
+                  - 'sagemaker:InvokeEndpoint'
+                  - 'ec2:DeleteNetworkInterfacePermission'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:CreateNetworkInterfacePermission'
+                  - 'ec2:DescribeNetworkInterfaceAttribute'
+                  - 'ec2:DescribeNetworkInterfacePermissions'
+                  - 'ec2:DetachNetworkInterface'
+                  - 'ec2:ResetNetworkInterfaceAttribute'
+                  - 'ec2:ModifyNetworkInterfaceAttribute'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:AttachNetworkInterface'
+                  - 's3:ListBucket'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                Resource:
+                  - !Join
+                      - ''
+                      - - "arn:aws:s3:::"
+                        - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+                  - !Join
+                      - ''
+                      - - "arn:aws:s3:::"
+                        - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+                        - "/*"
+  MicroserviceInTest:
+    DependsOn:
+      - MicroserviceRole
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: mlops-microservice-test
+      Role: !GetAtt 
+        - MicroserviceRole
+        - Arn
+      Handler: simple-microservice.handler
+      Description: >-
+        Sample lambda function meant to represent a microservice that interacts
+        with a SageMaker hosted endpoint.
+      Timeout: 15
+      MemorySize: 128
+      Environment:
+        Variables:
+          StagingBucket: 
+            Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+      Runtime: python3.7
+      VpcConfig: !If 
+        - CreateVPCECondition
+        -  SecurityGroupIds: 
+            Fn::ImportValue: !Sub "${pCICDStack}-TestSGs"
+           SubnetIds: 
+            Fn::ImportValue: !Sub "${pCICDStack}-TestSubnets"
+        - !Ref AWS::NoValue
+      Code:
+        S3Bucket: 
+          Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+        S3Key: !Ref pAppDirectory
+  SageMakerVPCEndpoint:
+    Condition: CreateVPCECondition
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument: >-
+        { "Statement": [ { "Action": [ "sagemaker:DescribeEndpointConfig",
+        "sagemaker:DescribeEndpoint", "sagemaker:InvokeEndpoint" ], "Effect":
+        "Allow", "Resource": "*", "Principal": "*" } ] }
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.sagemaker.runtime'
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: 'true'
+      VpcId: 
+        Fn::ImportValue: !Sub "${pCICDStack}-TestVPC"
+  TestRunnerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AWSCodePipelineCustomActionAccess'
+      Policies:
+        - PolicyName: mlops-testrunner-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'apigateway:POST'
+                Resource: !Sub 'arn:aws:apigateway:${AWS::Region}::mlops-microservice/*'
+              - Effect: Allow
+                Action: 
+                  - 'apigate:*'
+                  - 'ec2:DeleteNetworkInterfacePermission'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:CreateNetworkInterfacePermission'
+                  - 'ec2:DescribeNetworkInterfaceAttribute'
+                  - 'ec2:DescribeNetworkInterfacePermissions'
+                  - 'ec2:DetachNetworkInterface'
+                  - 'ec2:ResetNetworkInterfaceAttribute'
+                  - 'ec2:ModifyNetworkInterfaceAttribute'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:AttachNetworkInterface'
+                Resource: '*'
+  TestRunner:
+    DependsOn:
+      - TestRunnerRole
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: mlops-test-runner
+      Role: !GetAtt TestRunnerRole.Arn
+      Handler: mlops-test-runner.handler
+      Description: >-
+        Sample lambda function meant to represent a microservice that interacts
+        with a SageMaker hosted endpoint.
+      Timeout: 15
+      MemorySize: 128
+      Environment:
+        Variables:
+          app_ep: !Join 
+            - ''
+            - - 'https://'
+              - !Ref AppApiInTest
+              - .execute-api.
+              - !Ref 'AWS::Region'
+              - .amazonaws.com/Test/mlops-microservice-api
+      Runtime: python3.7
+      Code:
+        S3Bucket:
+          Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+        S3Key: !Ref pTestScriptsLocation

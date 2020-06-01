@@ -1,0 +1,777 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to deploy a sample CI/CD Pipeline for ML
+Metadata:
+  'AWS::CloudFormation::Interface':
+    ParameterGroups:
+      - Label:
+          default: Production Environment Parameters
+        Parameters:
+          - pCreateVPCE
+          - pVPCId
+          - pSubnetIds
+          - pSGs
+      - Label:
+          default: Test Environment Parameters
+        Parameters:
+          - pTestVPCId
+          - pTestSubnetIds
+          - pTestSGs
+      - Label:
+          default: CICD Pipeline Parameters
+        Parameters:
+          - pCodePipelineName
+          - RepositoryName
+          - pBranchName
+          - pApplicationName
+          - pStagingBucketNamePrefix
+      - Label:
+          default: ML Pipeline Parameters
+        Parameters:
+          - pMLPipelineName
+    ParameterLabels:
+      pCodePipelineName:
+        default: CodePipeline CICD Name
+      RepositoryName:
+        default: Repository Name
+      pBranchName:
+        default: Branch Name
+      pApplicationName:
+        default: Application Name
+      pMLPipelineName:
+        default: Step Function ML Pipeline Name
+      pTestVPCId:
+        default: VPC
+      pTestSubnetIds:
+        default: Subnets
+      pTestSGs:
+        default: Security Groups
+      pVPCId:
+        default: VPC
+      pSubnetIds:
+        default: Subnets
+      pSGs:
+        default: Security Groups
+      pCreateVPCE:
+        default: Use VPC
+      pStagingBucketNamePrefix:
+        default: Staging Bucket Name
+Mappings:
+  TrainingContainerRegionMap: 
+    us-east-1: 
+      Id: 811284229777
+    us-east-2: 
+      Id: 825641698319
+    us-west-1: 
+      Id: 632365934929
+    us-west-2:
+      Id: 433757028032
+    ap-east-1:
+      Id: 811284229777
+    ap-northeast-1:
+      Id: 501404015308
+    ap-northeast-2:
+      Id: 306986355934
+    ap-south-1:
+      Id: 991648021394
+    ap-southeast-1:
+      Id: 475088953585
+    ap-southeast-2:
+      Id: 544295431143
+    ca-central-1:
+      Id: 469771592824
+    cn-north-1:
+      Id: 390948362332
+    cn-northwest-1:
+      Id: 387376663083
+    eu-central-1:
+      Id: 813361260812
+    eu-north-1:
+      Id: 669576153137
+    eu-west-1:
+      Id: 685385470294
+    eu-west-2:
+      Id: 644912444149
+    eu-west-3:
+      Id: 749696950732
+    me-south-1:
+      Id: 249704162688
+    sa-east-1:
+      Id: 855470959533
+    us-gov-west-1:
+      Id: 226302683700
+Parameters:
+  pCreateVPCE:
+    Type: 'String'
+    AllowedValues: ["true","false"]
+    Default: "false"
+    Description: "Set to true if you want to run your app in a VPC."
+  pTestVPCId:
+    #Type: 'AWS::EC2::VPC::Id'
+    Type: 'String'
+    Default: "-- Required field only if deployed in a VPC --"
+  pTestSubnetIds:
+    #Type: 'List<AWS::EC2::Subnet::Id>'
+    Type: 'CommaDelimitedList'
+    Default: "-- Required field only if deployed in a VPC --"
+  pTestSGs:
+    #Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Type: 'CommaDelimitedList'
+    Default: "-- Required field only if deployed in a VPC --"
+  pVPCId:
+    #Type: 'AWS::EC2::VPC::Id'
+    Type: 'String'
+    Default: "-- Required field only if deployed in a VPC --"
+  pSubnetIds:
+    #Type: 'List<AWS::EC2::Subnet::Id>'
+    Type: 'CommaDelimitedList'
+    Default: "-- Required field only if deployed in a VPC --"
+  pSGs:
+    #Type: 'List<AWS::EC2::SecurityGroup::Id>'
+    Type: 'CommaDelimitedList'
+    Default: "-- Required field only if deployed in a VPC --"
+  pStagingBucketNamePrefix:
+    AllowedPattern: '[A-Za-z0-9-]{1,63}'
+    ConstraintDescription: >-
+      A bucket will be created with a name that includes the provided prefix and your AWS account ID appended.
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not
+      spaces. Must be unique within your account in an AWS Region.
+    Description: Prefix for an S3 bucket that will be used to stage assets.
+    MaxLength: '63'
+    MinLength: '1'
+    Default: 'mlops-pipeline-staging-'
+    Type: String
+  pCodePipelineName:
+    AllowedPattern: '[A-Za-z0-9-]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not
+      spaces. Must be unique within your account in an AWS Region.
+    Description: Name for your CodePipeline CICD pipeline
+    MaxLength: '63'
+    MinLength: '1'
+    Default: mlops-cicd-pipeline
+    Type: String
+  pBranchName:
+    Description: CodeCommit branch name
+    Type: String
+    Default: master
+  RepositoryName:
+    Description: A name for the CodeCommit repository that will be created.
+    Type: String
+    Default: mlops-repo
+    MaxLength: '1000'
+    MinLength: '1'
+    AllowedPattern: '[\w\.-]+'
+  pApplicationName:
+    Description: CodeDeploy application name
+    Type: String
+    Default: sample-app
+  pMLPipelineName:
+    AllowedPattern: '[A-Za-z0-9-]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not
+      spaces. Must be unique within your account in an AWS Region.
+    Description: Name for your StepFunction ML pipeline
+    MaxLength: '63'
+    MinLength: '1'
+    Type: String
+    Default: sample-ml-pipeline
+Resources:
+  GitRepo:
+    Type: 'AWS::CodeCommit::Repository'
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      RepositoryDescription: A code repository associated with this mlops pipeline
+  CFRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: mlops-cf-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+                - cloudformation.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AWSLambdaFullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonAPIGatewayAdministrator'
+        - 'arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess'
+        - 'arn:aws:iam::aws:policy/IAMFullAccess'
+      Policies:
+        - PolicyName: mlops-cicd-cf-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - 'glue:CreateJob'
+                  - 'glue:DeleteJob'
+                  - 'glue:UpdateJob'
+                  - 'ec2:CreateVpcEndpointServiceConfiguration'
+                  - 'ec2:CreateVpcEndpointConnectionNotification'
+                  - 'ec2:CreateVpcEndpoint'
+                  - 'ec2:ModifyVpcEndpointServiceConfiguration'
+                  - 'ec2:ModifyVpcEndpointConnectionNotification'
+                  - 'ec2:ModifyVpcEndpoint'
+                  - 'ec2:DeleteVpcEndpointServiceConfigurations'
+                  - 'ec2:DeleteVpcEndpoints'
+                  - 'ec2:DeleteVpcEndpointConnectionNotifications'
+                  - 'ec2:DescribeVpcEndpointServiceConfigurations'
+                  - 'ec2:DescribeVpcEndpointConnectionNotifications'
+                  - 'ec2:DescribeVpcEndpoints'
+                  - 'ec2:DescribeVpcEndpointConnections'
+                  - 'ec2:DeleteNetworkInterfacePermission'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:CreateNetworkInterfacePermission'
+                  - 'ec2:DescribeNetworkInterfaceAttribute'
+                  - 'ec2:DescribeNetworkInterfacePermissions'
+                  - 'ec2:DetachNetworkInterface'
+                  - 'ec2:ResetNetworkInterfaceAttribute'
+                  - 'ec2:ModifyNetworkInterfaceAttribute'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:AttachNetworkInterface'
+                Resource: "*"
+  AmazonCloudWatchEventRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: mlops-cwe-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: mlops-cwe-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'codepipeline:StartPipelineExecution'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:codepipeline:'
+                    - !Ref 'AWS::Region'
+                    - ':'
+                    - !Ref 'AWS::AccountId'
+                    - ':'
+                    - !Ref CICDPipeline
+  CodeCommittedCWERule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      EventPattern:
+        source:
+          - aws.codecommit
+        detail-type:
+          - CodeCommit Repository State Change
+        resources:
+          - !Join 
+            - ''
+            - - 'arn:aws:codecommit:'
+              - !Ref 'AWS::Region'
+              - ':'
+              - !Ref 'AWS::AccountId'
+              - ':'
+              - !Ref RepositoryName
+        detail:
+          event:
+            - referenceCreated
+            - referenceUpdated
+          referenceType:
+            - branch
+          referenceName:
+            - master
+      Targets:
+        - Arn: !Join 
+            - ''
+            - - 'arn:aws:codepipeline:'
+              - !Ref 'AWS::Region'
+              - ':'
+              - !Ref 'AWS::AccountId'
+              - ':'
+              - !Ref CICDPipeline
+          RoleArn: !GetAtt 
+            - AmazonCloudWatchEventRole
+            - Arn
+          Id: codepipeline-cicd-pipeline
+  CICDPipeline:
+    DependsOn:
+      - GitRepo
+      - StagingBucket
+      - CodePipelineServiceRole
+    Type: 'AWS::CodePipeline::Pipeline'
+    Properties:
+      Name: !Ref pCodePipelineName
+      RoleArn: !GetAtt 
+        - CodePipelineServiceRole
+        - Arn
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeCommit
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                BranchName: !Ref pBranchName
+                RepositoryName: !Ref RepositoryName
+                PollForSourceChanges: false
+              RunOrder: 1
+        - Name: BuildTestEnvironment
+          Actions:
+            - Name: StageAssets
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              Region: !Ref 'AWS::Region'
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                BucketName: !Ref StagingBucket
+                ObjectKey: mlops-staging
+                Extract: true
+              RunOrder: 1
+            - Name: PrepMLPipeline
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Region: !Ref 'AWS::Region'
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration: {
+                'ActionMode': 'CREATE_UPDATE',
+                'Capabilities': 'CAPABILITY_IAM,CAPABILITY_NAMED_IAM',
+                'StackName': 'mlops-ml-pipeline',
+                'TemplatePath': 'SourceOutput::cf/mlops-ml-pipeline.yaml',
+                'ParameterOverrides': !Join ['',["{\"pCICDStack\":\"",!Ref "AWS::StackName","\"}"]],
+                'RoleArn': !GetAtt CFRole.Arn}
+              RunOrder: 2
+            - Name: ProvisionInfrastructure
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Region: !Ref 'AWS::Region'
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration: {
+                  'ActionMode': 'CREATE_UPDATE',
+                  'Capabilities': 'CAPABILITY_IAM,CAPABILITY_NAMED_IAM',
+                  'StackName': 'mlops-test-env',
+                  'TemplatePath': 'SourceOutput::cf/mlops-test-env.yaml',
+                  'ParameterOverrides': !Join ['',["{\"pCICDStack\":\"",!Ref "AWS::StackName","\",\"pDeployInVpc\":\"",!Ref pCreateVPCE,"\"}"]],
+                  'RoleArn': !GetAtt CFRole.Arn}
+              RunOrder: 2
+        - Name: TrainModel
+          Actions:
+            - Name: RunMLPipeline
+              ActionTypeId:
+                Category: Invoke
+                Owner: AWS
+                Version: 1
+                Provider: Lambda
+              Region: !Ref 'AWS::Region'
+              Namespace: "ml-pipeline"
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                FunctionName: ml-pipeline-runner
+              OutputArtifacts:
+                - Name: MLEndpoint
+        - Name: Test
+          Actions:
+            - Name: RunTests
+              ActionTypeId:
+                Category: Invoke
+                Owner: AWS
+                Version: 1
+                Provider: Lambda
+              Region: !Ref 'AWS::Region'
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                FunctionName: mlops-test-runner
+              OutputArtifacts:
+                - Name: TestResults
+        - Name: Deploy
+          Actions:
+            - Name: Approval
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Version: 1
+                Provider: Manual
+              RunOrder: 1
+            - Name: DeployToProduction
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CloudFormation
+              Region: !Ref 'AWS::Region'
+              InputArtifacts:
+                - Name: SourceOutput
+              Configuration: {
+                  'ActionMode': 'CREATE_UPDATE',
+                  'Capabilities': 'CAPABILITY_IAM,CAPABILITY_NAMED_IAM',
+                  'StackName': 'mlops-prod-env',
+                  'TemplatePath': 'SourceOutput::cf/mlops-deploy-prod.yaml',
+                  'ParameterOverrides': !Join ['',["{\"pCICDStack\":\"",!Ref "AWS::StackName","\",\"pDeployInVpc\":\"",!Ref pCreateVPCE,"\",\"pProdVPC\":\"",!Ref pVPCId,"\",\"pTestVPC\":\"",!Ref pTestVPCId,"\",\"pModelEndpointName\":\"#{ml-pipeline.Endpoint}\"}"]],
+                  'RoleArn': !GetAtt CFRole.Arn}
+              RunOrder: 2
+      ArtifactStore:
+        Type: S3
+        Location: !Ref StagingBucket
+  CodePipelineServiceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: mlops-codepipeline-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'codecommit:CancelUploadArchive'
+                  - 'codecommit:GetBranch'
+                  - 'codecommit:GetCommit'
+                  - 'codecommit:GetUploadArchiveStatus'
+                  - 'codecommit:UploadArchive'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'codedeploy:CreateDeployment'
+                  - 'codedeploy:GetApplicationRevision'
+                  - 'codedeploy:GetDeployment'
+                  - 'codedeploy:GetDeploymentConfig'
+                  - 'codedeploy:RegisterApplicationRevision'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'devicefarm:ListProjects'
+                  - 'devicefarm:ListDevicePools'
+                  - 'devicefarm:GetRun'
+                  - 'devicefarm:GetUpload'
+                  - 'devicefarm:CreateUpload'
+                  - 'devicefarm:ScheduleRun'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                  - 'lambda:ListFunctions'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'iam:PassRole'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'elasticbeanstalk:*'
+                  - 'ec2:*'
+                  - 'elasticloadbalancing:*'
+                  - 'autoscaling:*'
+                  - 'cloudwatch:*'
+                  - 's3:*'
+                  - 'sns:*'
+                  - 'cloudformation:*'
+                  - 'rds:*'
+                  - 'sqs:*'
+                  - 'ecs:*'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 's3:ListBucket'
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                Resource:
+                  - !GetAtt StagingBucket.Arn
+                  - !Join 
+                    - ''
+                    - - !GetAtt StagingBucket.Arn
+                      - /*
+  StagingBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Join ['', [!Ref pStagingBucketNamePrefix, !Ref 'AWS::AccountId']]
+  MLPipelineRunnerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: mlops-pipeline-runner-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - 'arn:aws:iam::aws:policy/AWSCodePipelineCustomActionAccess'
+  MLPipelineRunnerPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: mlops-pipeline-runner-policy
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'states:*'
+              - 'events:DescribeRule'
+              - 'events:PutRule'
+              - 'events:PutTargets'
+              - 'lambda:InvokeFunction'
+              - 's3:GetObject'
+              - 's3:PutObject'
+              - 's3:DeleteObject'
+            Resource:
+              - !Join 
+                - ''
+                - - 'arn:aws:states:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':'
+                  - 'stateMachine:'
+                  - !Ref pMLPipelineName
+              - !Join 
+                - ''
+                - - 'arn:aws:states:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':'
+                  - 'execution:'
+                  - !Ref pMLPipelineName
+                  - ':*'
+              - !Join 
+                - ''
+                - - 'arn:aws:codepipeline:'
+                  - !Ref 'AWS::Region'
+                  - ':'
+                  - !Ref 'AWS::AccountId'
+                  - ':'
+                  - !Ref CICDPipeline
+              - !GetAtt StagingBucket.Arn
+              - !Join 
+                - ''
+                - - !GetAtt StagingBucket.Arn
+                  - /*
+          - Effect: Allow
+            Action:
+              - 's3:ListBucket'
+            Resource: '*'
+      Roles:
+        - !Ref MLPipelineRunnerRole
+  MLPipelineRunnerFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: ml-pipeline-runner
+      Role: !GetAtt MLPipelineRunnerRole.Arn
+      Handler: index.handler
+      Description: >-
+        Invoked by CodePipeline to execute a ML pipeline using StepFunctions.
+      Timeout: 15
+      MemorySize: 128
+      Environment:
+        Variables:
+          StagingBucket: !Ref StagingBucket
+          WorkflowArn: !Join
+          - ''
+          - - 'arn:aws:states:'
+            - !Ref 'AWS::Region'
+            - ':'
+            - !Ref 'AWS::AccountId'
+            - ':'
+            - 'stateMachine:'
+            - !Ref pMLPipelineName
+          TrainingImageRegistryPath: !Join 
+          - ''
+          - - !FindInMap [TrainingContainerRegionMap, !Ref "AWS::Region", Id]
+            - ".dkr.ecr."
+            - !Ref "AWS::Region" 
+            - ".amazonaws.com/"
+      Runtime: python3.7
+      Code:
+        ZipFile: |
+          import json
+          import uuid
+          import os
+          import boto3
+
+          CONFIG_S3KEY = 'mlops-staging/config/ml-pipeline-config.json'
+          sfn = boto3.client('stepfunctions')
+          cpipe = boto3.client('codepipeline')
+          s3 = boto3.client('s3')
+
+          def get_config(event):    
+              f = "/tmp/ml-pipeline-config.json"
+              b = os.environ['StagingBucket']
+              c = {"workflow_params":""}
+              try:
+                  s3.download_file(b, CONFIG_S3KEY, f)
+                  p = json.load(open(f, 'r'))
+                  id = uuid.uuid4().hex
+                  p["GlueJobName"] = "ml-pipeline-etl-job"
+                  p["GlueArgs"]["--S3_SOURCE"] = p["GlueArgs"]["--S3_SOURCE"].format(b)
+                  p["GlueArgs"]["--S3_DEST"] = p["GlueArgs"]["--S3_DEST"].format(b)
+                  p["DataLakeS3Uri"] = p["DataLakeS3Uri"].format(b)
+                  p["ModelS3Path"] =  p["ModelS3Path"].format(p["DataLakeS3Uri"])
+                  p["TrainDataS3Path"] =  p["TrainDataS3Path"].format(p["DataLakeS3Uri"])
+                  p["ValidationDataS3Path"] = p["ValidationDataS3Path"].format(p["DataLakeS3Uri"])
+                  p["DataCaptureS3Path"] = p["DataCaptureS3Path"].format(p["DataLakeS3Uri"])
+                  p["TrainingJobName"] = p["TrainingJobName"]+"-{}".format(id)
+                  p["ModelName"] = p["ModelName"]+"-{}".format(id)
+                  p["TrainingImage"] = os.environ["TrainingImageRegistryPath"]+p["TrainingImageTag"]
+                  p["TriggerId"] = event['CodePipeline.job']['id']
+                  c["workflow_params"] = p
+              except Exception as e:
+                  c = e
+              return c
+
+          def run_pipeline(wf_arn, config):
+              try :
+                  r = sfn.start_execution(stateMachineArn= wf_arn,
+                                            input= json.dumps(config['workflow_params']))    
+              except Exception as e:
+                  return e
+              return r['executionArn']
+
+          def get_status(job_id, arn, event):
+              s = sfn.describe_execution(executionArn=arn)['status']
+              r = {'m':'Pipeline has {}'.format(s)}  
+
+              if s == 'RUNNING' :
+                  ct = json.dumps({'previous_job_id': job_id,'executionArn': arn})
+                  cpipe.put_job_success_result(jobId=job_id, continuationToken=ct)
+              
+              elif s == 'SUCCEEDED' :
+                  c = get_config(event)["workflow_params"]
+                  if c :
+                      o = { "Experiment": c['ExperimentName'],
+                            "Trial": c['ExperimentTrialsPrefix']+'-{}'.format(c["TriggerId"]),
+                            "Endpoint": c['InferenceEPName']}
+                      cpipe.put_job_success_result(jobId=job_id, outputVariables=o)
+
+              elif s == 'FAILED' or s == 'TIMED_OUT' or s == 'ABORTED' :
+                  cpipe.put_job_failure_result(jobId=job_id, 
+                                              failureDetails={"type":"JobFailed","message":"Pipeline has {}".format(s)})
+              else :
+                  cpipe.put_job_failure_result(jobId=job_id, 
+                                              failureDetails={"type":"JobFailed","message":"Pipeline in an unknown state"}) 
+              return r
+                        
+          def handler(event, context):
+
+              id = event['CodePipeline.job']['id']
+              jd = event['CodePipeline.job']['data']
+                        
+              if 'continuationToken' in jd:
+                  ct = json.loads(jd['continuationToken'])
+                  r = get_status(id, ct['executionArn'], event)
+                  return r
+
+              wf_arn = os.environ['WorkflowArn']
+              execs = sfn.list_executions(stateMachineArn=wf_arn,
+                                                  statusFilter='RUNNING',
+                                                  maxResults=1)                                                                    
+              r = {'m':''}                            
+              if len(execs['executions']) > 0 :
+                  r['m'] = "Pipeline limited to one execution at a time." 
+                  return r
+                            
+              c = get_config(event)
+              if c :  
+                  arn = run_pipeline(wf_arn, c)
+                  if arn:
+                      r['m'] = "Pipeline launched."
+                      ct = json.dumps({'previous_job_id': id,'executionArn': arn})
+                      cpipe.put_job_success_result(jobId=id, continuationToken=ct)
+                  else :
+                      r['m'] = "Pipeline failed."
+                      cpipe.put_job_failure_result(jobId=id, 
+                                                  failureDetails={"type":"JobFailed","message":r['msg']})
+                  return r
+Outputs:
+  pCreateVPCE:
+    Description: Boolean value that indicates whether or not to deploy in a VPC and use a VPC endpoint.
+    Value: !Ref pCreateVPCE
+    Export:
+      Name: !Sub ${AWS::StackName}-DeployInVPC
+  pTestVPCId:
+    Description: VPC Id of your test environment.
+    Value: !Ref pTestVPCId
+    Export:
+      Name: !Sub ${AWS::StackName}-TestVPC
+  pTestSubnetIds:
+    Description: Subnet Ids to use in your test environment.
+    Value: !Join 
+      - ','
+      - !Ref pTestSubnetIds
+    Export:
+      Name: !Sub ${AWS::StackName}-TestSubnets
+  pTestSGs:
+    Description: SGs to use in your test environment.
+    Value: !Join 
+      - ','
+      - !Ref pTestSGs
+    Export:
+      Name: !Sub ${AWS::StackName}-TestSGs
+  pVPCId:
+    Description: VPC Id of your production environment.
+    Value: !Ref pVPCId
+    Export:
+      Name: !Sub ${AWS::StackName}-ProdVPC
+  pSubnetIds:
+    Description: Subnet Ids to use in your production environment.
+    Value: !Join 
+      - ','
+      - !Ref pSubnetIds
+    Export:
+      Name: !Sub ${AWS::StackName}-ProdSubnets
+  pSGs:
+    Description: SGs to use in your production environment.
+    Value: !Join 
+      - ','
+      - !Ref pSGs
+    Export:
+      Name: !Sub ${AWS::StackName}-ProdSGs
+  StagingBucket:
+    Description: Name of the S3 bucket used to stage assets like code and configurations for use by the pipeline.
+    Value: !Ref StagingBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-StagingBucket

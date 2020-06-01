@@ -1,0 +1,19 @@
+{
+  "version" : 0.0,
+  "features" : [ {
+    "name" : "_c0",
+    "inferred_type" : "String",
+    "completeness" : 1.0
+  } ],
+  "monitoring_config" : {
+    "evaluate_constraints" : "Enabled",
+    "emit_metrics" : "Enabled",
+    "datatype_check_threshold" : 1.0,
+    "domain_content_threshold" : 1.0,
+    "distribution_constraints" : {
+      "perform_comparison" : "Enabled",
+      "comparison_threshold" : 0.1,
+      "comparison_method" : "Robust"
+    }
+  }
+}

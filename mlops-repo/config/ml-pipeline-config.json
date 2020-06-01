@@ -1,0 +1,78 @@
+{
+    "ExperimentName": "ml-pipeline-experiment",
+    "ExperimentTrialsPrefix": "trial",
+    "DataLakeS3Uri": "s3://{}/mlops-staging",
+    "GlueArgs": {
+        "--S3_SOURCE": "s3://{}/mlops-staging/customer-churn.csv",
+        "--S3_DEST": "s3a://{}/mlops-staging/",
+        "--TRAIN_KEY": "train/",
+        "--VAL_KEY": "validation/"},
+    "TrainingJobName": "churn-model-xgboost",
+    "ModelS3Path": "{}/model",
+    "TrainDataS3Path": "{}/train/",
+    "ValidationDataS3Path": "{}/validation/",
+    "DataCaptureS3Path": "{}/capture/",
+    "MLPipelineControllerName": "ml-pipeline-controller",
+    "ModelName": "customer-churn-xgb",
+    "InferenceEPName": "customer-churn-xgb-ep",
+    "InfInstanceType":  "ml.m5.xlarge",
+    "InfBaseInstanceCount": 1,
+    "TrainingImageTag": "xgboost:1",
+    "TrainingInstanceType": "ml.m5.xlarge",
+    "TrainingInstanceCount": 1,
+    "HyperParameters": {
+        "max_depth": "5",
+        "eta": "0.2",
+        "gamma": "4",
+        "min_child_weight": "6",
+        "subsample": "0.8",
+        "silent": "0",
+        "objective": "binary:logistic",
+        "eval_metric": "error",
+        "num_round": "100"
+    },
+    "TrainingJobParameters":{
+        "AlgorithmSpecification": {
+        "TrainingImage.$": "$$.Execution.Input['TrainingImage']",
+        "TrainingInputMode": "File"
+        },
+        "OutputDataConfig": {
+            "S3OutputPath.$": "$$.Execution.Input['ModelS3Path']"
+        },
+        "StoppingCondition": {
+            "MaxRuntimeInSeconds": 86400
+        },
+        "ResourceConfig": {
+            "InstanceCount.$": "$$.Execution.Input['TrainingInstanceCount']",
+            "InstanceType.$": "$$.Execution.Input['TrainingInstanceType']",
+            "VolumeSizeInGB": 30
+        },
+        "RoleArn.$": "$$.Execution.Input['SageMakerExecutionRole']",
+        "InputDataConfig": [
+            {
+                "DataSource": {
+                    "S3DataSource": {
+                        "S3DataType": "S3Prefix",
+                        "S3Uri.$": "$$.Execution.Input['TrainingDataS3Path']",
+                        "S3DataDistributionType": "FullyReplicated"
+                    }
+                },
+                "ContentType": "csv",
+                "ChannelName": "train"
+            },
+            {
+                "DataSource": {
+                    "S3DataSource": {
+                        "S3DataType": "S3Prefix",
+                        "S3Uri.$": "$$.Execution.Input['ValidationDataS3Path']",
+                        "S3DataDistributionType": "FullyReplicated"
+                    }
+                },
+                "ContentType": "csv",
+                "ChannelName": "validation"
+            }
+        ],
+        "HyperParameters.$": "$$.Execution.Input['HyperParameters']",
+        "TrainingJobName.$": "$$.Execution.Input['TrainingJobName']"
+    }
+}

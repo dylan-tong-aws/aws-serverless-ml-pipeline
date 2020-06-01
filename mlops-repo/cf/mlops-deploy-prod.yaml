@@ -1,0 +1,387 @@
+Parameters:
+  pAppDirectory:
+    AllowedPattern: '[A-Za-z0-9-/.]{1,100}'
+    Description: The S3 prefix for your microservice code.
+    MaxLength: '100'
+    MinLength: '1'
+    Default: mlops-staging/app/simple-microservice.zip
+    Type: String
+  pMonitorCRDirectory:
+    AllowedPattern: '[A-Za-z0-9-/.]{1,100}'
+    Description: The S3 prefix for your custom resource code.
+    MaxLength: '100'
+    MinLength: '1'
+    Default: mlops-staging/cf/custom-resources/model-monitor-cr.zip
+    Type: String
+  pCICDStack:
+    AllowedPattern: '[A-Za-z0-9-/.]{1,50}'
+    Description: Name of your CICD CloudFormation stack to cross reference in this nested stack.
+    MaxLength: '50'
+    MinLength: '1'
+    Type: String
+  pModelEndpointName:
+    Type: 'String'
+    AllowedPattern: '[A-Za-z0-9-/.]{1,50}'
+    MaxLength: '50'
+    MinLength: '1'
+    Default: 'customer-churn-xgb-ep'
+  pDeployInVpc:
+    Type: 'String'
+    AllowedValues: ["true","false"]
+    Default: "false"
+    Description: "Set to true if you want to run your app in a VPC."
+  pTestVPC:
+    #Type: 'AWS::EC2::VPC::Id'
+    Type: 'String'
+    Default: "-- Required field only if deployed in a VPC --"
+  pProdVPC:
+    #Type: 'AWS::EC2::VPC::Id'
+    Type: 'String'
+    Default: "-- Required field only if deployed in a VPC --"
+Conditions:
+  CreateVPCECondition:
+    !And
+      - !Equals
+          - !Ref pDeployInVpc
+          - "true"
+      - !Not
+          - !Equals
+            - !Ref pProdVPC
+            - !Ref pTestVPC
+Mappings: 
+  PreBuiltMonitorRegionMap: 
+    us-east-1: 
+      Id: 156813124566
+    us-east-2: 
+      Id: 777275614652
+    us-west-1: 
+      Id: 890145073186
+    us-west-2:
+      Id: 159807026194
+    ap-east-1:
+      Id: 001633400207
+    ap-northeast-1:
+      Id: 574779866223
+    ap-northeast-2:
+      Id: 709848358524
+    ap-south-1:
+      Id: 126357580389
+    ap-southeast-1:
+      Id: 245545462676
+    ap-southeast-2:
+      Id: 563025443158
+    ca-central-1:
+      Id: 536280801234
+    cn-north-1:
+      Id: 453000072557
+    cn-northwest-1:
+      Id: 453252182341
+    eu-central-1:
+      Id: 048819808253
+    eu-north-1:
+      Id: 895015795356
+    eu-west-1:
+      Id: 468650794304
+    eu-west-2:
+      Id: 749857270468
+    eu-west-3:
+      Id: 680080141114
+    me-south-1:
+      Id: 607024016150
+    sa-east-1:
+      Id: 539772159869
+    us-gov-west-1:
+      Id: 362178532790
+Resources:
+  SageMakerVPCEndpoint:
+    Condition: CreateVPCECondition
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument: >-
+        { "Statement": [ { "Action": [ "sagemaker:DescribeEndpointConfig",
+        "sagemaker:DescribeEndpoint", "sagemaker:InvokeEndpoint" ], "Effect":
+        "Allow", "Resource": "*", "Principal": "*" } ] }
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.sagemaker.runtime'
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: 'true'
+      VpcId: 
+        Fn::ImportValue: !Sub "${pCICDStack}-ProdVPC"
+  MicroserviceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: mlops-app-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sagemaker:DescribeEndpointConfig'
+                  - 'sagemaker:DescribeEndpoint'
+                  - 'sagemaker:InvokeEndpoint'
+                  - 'ec2:DeleteNetworkInterfacePermission'
+                  - 'ec2:DescribeNetworkInterfaces'
+                  - 'ec2:CreateNetworkInterfacePermission'
+                  - 'ec2:DescribeNetworkInterfaceAttribute'
+                  - 'ec2:DescribeNetworkInterfacePermissions'
+                  - 'ec2:DetachNetworkInterface'
+                  - 'ec2:ResetNetworkInterfaceAttribute'
+                  - 'ec2:ModifyNetworkInterfaceAttribute'
+                  - 'ec2:DeleteNetworkInterface'
+                  - 'ec2:CreateNetworkInterface'
+                  - 'ec2:AttachNetworkInterface'
+                  - 's3:ListBucket'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                  - 's3:PutObject'
+                  - 's3:DeleteObject'
+                Resource:
+                  - !Join
+                      - ''
+                      - - "arn:aws:s3:::"
+                        - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+                  - !Join
+                      - ''
+                      - - "arn:aws:s3:::"
+                        - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+                        - "/*"
+  CRHelperLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.7
+      Content:
+        S3Bucket: 
+          Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+        S3Key: mlops-staging/layers/crhelper.zip
+      Description: Layer to support CloudFormation custom resources
+      LayerName: smexperiments
+      LicenseInfo: "Apache License 2.0"
+  CustomResourceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: mlops-custom-resource-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'
+        - 'arn:aws:iam::aws:policy/AWSLambdaFullAccess'
+        - 'arn:aws:iam::aws:policy/CloudWatchEventsFullAccess'
+  MonitorCustomResourceHelper:
+    DependsOn:
+      - CRHelperLayer
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: mlops-monitor-crhelper
+      Role: !GetAtt CustomResourceRole.Arn
+      Handler: model-monitor-cr.handler
+      Description: >-
+        This Lambda function is a CloudFormation custom resource. It creates a SageMaker default model monitor schedule.
+      Timeout: 15
+      MemorySize: 128
+      Layers:
+        - !Ref CRHelperLayer
+      Runtime: python3.7
+      VpcConfig: !If 
+        - CreateVPCECondition
+        -  SecurityGroupIds: 
+            Fn::ImportValue: !Sub "${pCICDStack}-ProdSGs"
+           SubnetIds: 
+            Fn::ImportValue: !Sub "${pCICDStack}-ProdSubnets"
+        - !Ref AWS::NoValue
+      Code:
+        S3Bucket: 
+          Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+        S3Key: !Ref pMonitorCRDirectory
+  MonitoringSchedule:
+    DependsOn:
+      - MonitorCustomResourceHelper
+    Type: Custom::MonitoringSchedule
+    Version: '1.0'
+    Properties:
+      ServiceToken: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:mlops-monitor-crhelper'
+      ScheduleName: mlops-monitor-sched
+      EndpointName: !Ref pModelEndpointName
+      BaselineConstraintsUri: 
+        !Join 
+          - ''
+          - - 's3://'
+            - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+            - "/mlops-staging/config/monitor-config/constraints.json"
+      BaselineStatisticsUri: 
+        !Join 
+          - ''
+          - - 's3://'
+            - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+            - "/mlops-staging/config/monitor-config/statistics.json"
+      InputLocalPath: "/opt/ml/processing/endpointdata"
+      OutputLocalPath: "/opt/ml/processing/localpath"
+      OutputS3URI: 
+        !Join 
+          - ''
+          - - 's3://'
+            - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+            - "/mlops-staging/monitor-config/statistics.json"
+      ImageURI: 
+        !Join
+         - ''
+         - - !FindInMap [PreBuiltMonitorRegionMap, !Ref "AWS::Region", Id]
+           - !Sub ".dkr.ecr.${AWS::Region}.amazonaws.com/sagemaker-model-monitor-analyzer"
+      ScheduleExpression: cron(0 * ? * * *)
+      PassRoleArn: !GetAtt SageMakerMonitorRole.Arn
+  SageMakerMonitorRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: mlops-sm-monitor-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - sagemaker.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'
+  MicroserviceInProd:
+    DependsOn:
+      - MicroserviceRole
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      FunctionName: mlops-microservice-prod
+      Role: !GetAtt MicroserviceRole.Arn
+      Handler: simple-microservice.handler
+      Description: >-
+        Sample lambda function meant to represent a microservice that interacts
+        with a SageMaker hosted endpoint.
+      Timeout: 15
+      MemorySize: 128
+      Environment:
+        Variables:
+          StagingBucket: 
+            Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+      Runtime: python3.7
+      VpcConfig: !If 
+        - CreateVPCECondition
+        -  SecurityGroupIds: 
+            Fn::ImportValue: !Sub "${pCICDStack}-ProdSGs"
+           SubnetIds: 
+            Fn::ImportValue: !Sub "${pCICDStack}-ProdSubnets"
+        - !Ref AWS::NoValue
+      Code:
+        S3Bucket: 
+          Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+        S3Key: !Ref pAppDirectory
+  AppApiInProd:
+    Type: 'AWS::ApiGateway::RestApi'
+    DependsOn:
+      - APIIntegrationRole
+    Properties:
+      Name: mlops-microservice-api-prod
+      Body:
+        swagger: '2.0'
+        paths:
+          /mlops-microservice-api:
+            post:
+              produces:
+                - application/json
+              schemes:
+                - https
+              responses:
+                '200':
+                  description: 200 response
+                  schema:
+                    $ref: '#/definitions/Empty'
+              x-amazon-apigateway-integration:
+                credentials: !GetAtt APIIntegrationRole.Arn
+                uri: !Sub >-
+                  arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MicroserviceInProd.Arn}/invocations
+                responses:
+                  default:
+                    statusCode: '200'
+                passthroughBehavior: when_no_match
+                httpMethod: POST
+                contentHandling: CONVERT_TO_TEXT
+                type: aws
+        definitions:
+          Empty:
+            type: object
+      Parameters:
+        endpointConfigurationTypes: REGIONAL
+  ApiDeploymentInStaging:
+    DependsOn:
+      - AppApiInProd
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      RestApiId: !Ref AppApiInProd
+      StageDescription:
+        CacheTtlInSeconds: 3600
+        CacheClusterEnabled: 'true'
+        CacheClusterSize: '1.6'
+        TracingEnabled: 'true'
+      StageName: Staging
+  ApiProdStage:
+    DependsOn:
+      - ApiDeploymentInStaging
+    Type: 'AWS::ApiGateway::Stage'
+    Properties:
+      DeploymentId: !Ref ApiDeploymentInStaging
+      RestApiId: !Ref AppApiInProd
+      CacheClusterEnabled: 'true'
+      CacheClusterSize: '1.6'
+      MethodSettings:
+        - ResourcePath: /*
+          HttpMethod: '*'
+          CacheTtlInSeconds: 3600
+          CachingEnabled: 'true'
+      CanarySetting:
+        PercentTraffic: 30
+        UseStageCache: 'false'
+      StageName: Prod
+  APIIntegrationRole:
+    DependsOn:
+      - MicroserviceInProd
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: mlops-api-role-prod
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: mlops-api-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                Resource: !GetAtt MicroserviceInProd.Arn

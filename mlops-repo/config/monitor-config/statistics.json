@@ -1,0 +1,17 @@
+{
+  "version" : 0.0,
+  "dataset" : {
+    "item_count" : 2999
+  },
+  "features" : [ {
+    "name" : "_c0",
+    "inferred_type" : "String",
+    "string_statistics" : {
+      "common" : {
+        "num_present" : 2999,
+        "num_missing" : 0
+      },
+      "distinct_count" : 2698.0
+    }
+  } ]
+}
