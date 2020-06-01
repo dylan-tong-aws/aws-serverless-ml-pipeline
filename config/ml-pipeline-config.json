@@ -3,7 +3,7 @@
     "ExperimentTrialsPrefix": "trial",
     "DataLakeS3Uri": "s3://{}/mlops-staging",
     "GlueArgs": {
-        "--S3_SOURCE": "s3://{}/mlops-staging/customer-churn.csv",
+        "--S3_SOURCE": "s3://{}/mlops-staging/sample-datasets/customer-churn.csv",
         "--S3_DEST": "s3a://{}/mlops-staging/",
         "--TRAIN_KEY": "train/",
         "--VAL_KEY": "validation/"},
