@@ -23,7 +23,7 @@ The pipeline consists of five main steps:
       
 3. **Run the ML Pipeline:** The provided
 
-[!SFN-pipeline](/images/sfn-ml-pipeline.png)
+![SFN-pipeline](/images/sfn-ml-pipeline.png)
 
 ### Quick-start Instructions
 
