@@ -17,7 +17,7 @@ Some organizations will need to re-design the pipeline to meet their requirement
 
 The out-of-the-box pipeline serves as a learning example--it should help a developer understand how to bring AWS's DevOps building blocks together for ML pipeline automation. It also provides a starting point for you to iterate on.
 
-Trek8's Enterprise CI/CD [Quick-start](https://github.com/aws-quickstart/quickstart-trek10-serverless-enterprise-cicd) is a good example of something that is closer to an Enterprise turn-key solution. However, the multi-account design makes it harder to deploy. One of the goals of this solution is to enable a working system in your AWS environment with a few simple steps.
+Trek8's Enterprise CI/CD [Quick-start](https://github.com/aws-quickstart/quickstart-trek10-serverless-enterprise-cicd) is a good example of something that is closer to an enterprise turn-key solution. However, the multi-account design makes it harder to deploy. One of the goals of this solution is to enable a working system in your AWS environment with a [few simple steps](#Quick-Start-Instructions).
 
 Many of you will already have an existing CI/CD pipeline, and as described in the following section, you can replace the provided CI/CD backbone. Refer to the advance section below for more details on how to re-design, replace and configure the various components in this solution.
 
@@ -55,7 +55,7 @@ This design provides the benefit of better consistency. However, there're trade-
 
 Secondly, at this point in time, Step Functions is best design to orchestrate systems running exclusively in the AWS cloud. The design pattern prescribed is more flexible. You could replace the CodePipeline backbone in this solution with an on-premise CI/CD solution. The other parts of the pipeline are decoupled and could run in the cloud as part of a hybrid cloud architecture.
 
-### Quick-start Instructions
+### Quick Start Instructions
 
 *Pre-requesites*:
 * [An AWS Account](https://aws.amazon.com/free/?all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc)
