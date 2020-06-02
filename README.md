@@ -17,7 +17,7 @@ Some organizations will need to re-design the pipeline to meet their requirement
 
 The out-of-the-box pipeline serves as a learning example--it should help a developer understand how to bring AWS's DevOps building blocks together for ML pipeline automation. It also provides a starting point for you to iterate on.
 
-Trek8's Enterprise CI/CD [Quick-start](https://github.com/aws-quickstart/quickstart-trek10-serverless-enterprise-cicd) is a good example of something that is closer to an enterprise turn-key solution. However, the multi-account design makes it harder to deploy. One of the goals of this solution is to enable a working system in your AWS environment with a [few simple steps](#Quick-Start-Instructions).
+Trek8's Enterprise CI/CD [Quick-start](https://github.com/aws-quickstart/quickstart-trek10-serverless-enterprise-cicd) is a good example of something closer to an enterprise turn-key solution. However, the multi-account design makes it harder to deploy. One of the goals of this solution is to enable a working system in your AWS environment with a [few simple steps](#Quick-Start-Instructions).
 
 Many of you will already have an existing CI/CD pipeline, and as described in the [following section](Common-Design-Patterns), you can replace the provided CI/CD backbone. Refer to the [Advanced Concepts](Advance-Concepts) section below for more details on how to re-design, replace and configure the various components in this solution.
 
