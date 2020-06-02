@@ -11,7 +11,14 @@ The following diagram is a logical archictecture for the solution.
 
 ![architecture](/images/logical-architecture.png)
 
+
+---
+
 The pipeline consists of five main steps:
+
+<img src="images/codepipeline-cicd.png" width="80%"/>
+
+---
 
 1. **Change detection:** Changes to assets such as code, configurations and data can trigger the pipeline to run. Triggers include git pushes to the master branch in [CodeCommit](https://aws.amazon.com/codecommit/), or changes to data sets in your S3 bucket.
 
