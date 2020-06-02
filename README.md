@@ -11,14 +11,11 @@ A configurable (no/low code) AWS machine learning pipeline automation solution b
 
 **Step 1:** Deploy the CodePipeline CI/CD pipeline back-bone
 
-
 <a href="https://console.aws.amazon.com/cloudformation/home?region=us-west-
 2#/stacks/new?stackName=mlops-cicd&templateURL=https://dtong-public-fileshare.s3-us-west-2.amazonaws.com/aws-ml-pipeline/cf/mlops-cicd.yaml">
 ![launch stack button](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)</a>
 
 
----
-
-**Step 2:** Ddf
+**Step 2:** Wait for the 
 
 test
