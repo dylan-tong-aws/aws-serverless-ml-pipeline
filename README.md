@@ -102,6 +102,6 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
 ### Known Issues
 
-1. [6/2/2020] Network communication between Lambda and SageMaker VPC interface endpoint.
+1. *[6/2/2020]* **Network communication between Lambda and SageMaker VPC interface endpoint**
 
-The provided template includes VPC support. However, at the time of writing, there is a network issue between AWS Lambda and the VPC interface endpoint that prevents communication between a Lambda function running in a VPC and a SageMaker hosted endpoint through a VPC interface endpoint. Consequently, communication between Lambda and the hosted endpoint needs to be public until this issue is fixed.
+     The provided template includes VPC support. However, at the time of writing, there is a network issue between AWS Lambda and the VPC interface endpoint that prevents communication between a Lambda function running in a VPC and a SageMaker hosted endpoint through a VPC interface endpoint. Consequently, communication between Lambda and the hosted endpoint needs to be public until this issue is fixed.
