@@ -1,7 +1,7 @@
 # AWS Serverless: Continuous ML Pipeline
 author: [Dylan Tong](mailto:dylatong@amazon.com)
 
-This is a low-code AWS machine learning pipeline automation solution built on AWS serverless components. 
+This is a framework for continuous machine learning pipeline automation on AWS. It provides an out-of-the-box integration of AWS serverless components and builds on top of the capabilities provided by services like CodePipeline and the Step Functions Data Science SDK. The framework is designed to be extensible and facilitate a low-code approach to ML pipeline automation.
 
 The solution can be automatically deployed into your account using [CloudFormation](https://aws.amazon.com/cloudformation/). Quick-start instructions are provided below. The solution can be deployed and a working example can be launched with just a few steps.
 
@@ -101,10 +101,42 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
 1. **How do I change the configurations such as the algorithm and hyperparameters used by the provided ML pipeline?**
 
-The provided ML pipeline can be configured through the [ml-pipeline-config.json](/config/ml-pipeline-config.json) file. The configuration file includes configurations to change the algorithm, hyperparameters, endpoint name, experiment tracking, ETL configurations, data source location and more.
+     The provided ML pipeline can be configured through the [ml-pipeline-config.json](/config/ml-pipeline-config.json) file. The configuration file includes configurations to change the algorithm, hyperparameters, endpoint name, experiment tracking, ETL configurations, data source location and more.
 
-2. **How do I modify or replace the CodePipeline CI/CD backbone?**
+2. **How do I modify or replace the workflow structure of the machine learning pipeline?**
 
+     The machine learning pipeline deployment is contained within the [mlops-ml-pipeline.yaml](/cf/mlops-ml-pipeline.yaml) template. There are two main components:
+     * The Step Function definition metadata which describes the Step Function workflow for the pipeline. It leverages the [Data Science SDK](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-python-sdk.html), which provides an integration with Amazon SageMaker. The logical resource id for the pipeline is in MLPipeline. You can modify the Step Function definition in that file. Once you commit these changes, the CI/CD backbone will dynamically re-create the new ML pipeline.
+     * Control logic is executed through a Lambda function called "ml-pipeline-controller." In some cases, the Data Science SDK isn't sufficient and additional logic has to be implemented. The controller manages more advanced state transitions and serves as an integration point between CodePipeline and Step Functions. You may need to implement additional custom logic to support enhancements to the ML pipeline.
+
+3. **How do I modify the application logic?**
+
+     The provided pipeline deploys a simple microservice. It consists of an API that takes features as input and responds with a prediction. The back-end logic is executed in Lambda and it's sole responsibility is to mediate communication between the SageMaker hosted model and the client. You can enhance the microservice by modifying the [business logic](app/simple-microservice.zip). There're API definitions managed by API Gateway for both test and production environments. These environments are defined in [mlops-test-env.yaml](/cf/mlops-test-env.yaml) and [mlops-deploy-prod.yaml](/cf/mlops-deploy-prod.yaml). 
+
+     AppApiInTest(/cf/mlops-test-env.yaml) and the AppAPIInProd(/cf/mlops-deploy-prod.yaml) are the logical identifiers in these respective templates. The API definitions are defined in swagger 2.0 format.
+     
+4. **How do I modify and add test suites?**
+
+     The pipeline provides a sample test and it is up to your to extend and implement your own relevant automated tests. The CI/CD pipeline runs a Lambda function called mlops-test-runner(/tests/mlops-test-runner.zip). You should modify this Lambda function so that it serves as a starting point to run your tests. For instance, you might choose to have this Lambda function kick-off a Step Function workflow that orchestrates the execution of your tests. Alternatively, this Lambda function might kick off a series of tests running as containerized workloads in [Fargate](https://aws.amazon.com/fargate/). The design and implementation is left to you.
+     
+5. **How do I modify my test environment resources?**
+
+     The test environment resources are contained within [mlops-test-env.yaml](/cf/mlops-test-env.yaml). The environment is built dynamically by the CI/CD backbone. You can modify this template as needed.
+
+6. **How do I modify my production environment resources and deployment strategy?**
+
+     The production environment resources are contained within [mlops-prod-deploy.yaml](/cf/mlops-prod-deploy.yaml). The deployment process is executed through a CloudFormation stack update through the CI/CD backbone. You can modify this template as needed. For instance, the canary deploy and production stage settings can be changed through this template.
+     
+7. **How do I modify the model monitoring functionality?**
+
+     The provided pipeline deploys a SageMaker default monitor. You can create a [custom monitor](https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor-custom-monitoring-schedules.html) and modify the monitor image resource used by the MonitoringSchedule resource defined in [mlops-prod-deploy.yaml](/cf/mlops-prod-deploy.yaml).
+
+8. **How do I modify or replace the CodePipeline CI/CD backbone?**
+
+     The [CI/CD Pipeline](/cf/mlops-cicd.yaml) backbone is defined in this [template](/cf/mlops-cicd.yaml). You can modify the CodePipeline stages by modifying the proprities defined for the resource, CICDPipeline. 
+     
+     If you want to replace CodePipeline as the CI/CD backbone, you could integrate your alternative CI/CD solution using the same or similar strategy employed in this example. Ultimately, your solution needs to be able to make API calls to AWS Lambda and CloudFormation to orchestrate the other parts of this pipeline. The provided assets and design could be re-used and serve as a reference.
+     
 
 ### Known Issues
 
