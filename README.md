@@ -51,7 +51,7 @@ The provided pipeline consists of five main steps:
 
 Once the reviewer approves the changes, the pipeline deploys them into production using this [template](cf/mlops-deploy-prod.yaml). The provided template deploys a new copy of the simple microservice. This is optionally deployed into a VPC with a [VPC endpoint](https://docs.aws.amazon.com/sagemaker/latest/dg/interface-vpc-endpoint.html). The API managed by API Gateway is promoted to production using a [carnary deploy](https://docs.aws.amazon.com/apigateway/latest/developerguide/create-canary-deployment.html). Finally, a SageMaker [Model Monitor](https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor.html) is deployed and is scheduled to evaluate data drift issues on an hourly basis.
 
-### Design Patterns and Best Practices
+### Common Design Patterns
 
 The choosen design isn't the only way to integrate a ML pipeline into an existing CI/CD CodePipeline. Another common pattern is to have AWS Step Functions serve as the overlaying workflow manager and have both CodePipeline and the ML pipelining enclosed within a single Step Function workflow. One might favor this design for better consistency and perhaps a cleaner design.
 
@@ -96,3 +96,12 @@ Specifically, the steps are:
      * git push
 
 You can monitor the pipeline progression from the CodePipeline and AWS Step Functions console. Enjoy!
+
+### Advance Concepts
+
+
+### Known Issues
+
+1. [6/2/2020] Network communication between Lambda and SageMaker VPC interface endpoint.
+
+The provided template includes VPC support. However, at the time of writing, there is a network issue between AWS Lambda and the VPC interface endpoint that prevents communication between a Lambda function running in a VPC and a SageMaker hosted endpoint through a VPC interface endpoint. Consequently, communication between Lambda and the hosted endpoint needs to be public until this issue is fixed.
