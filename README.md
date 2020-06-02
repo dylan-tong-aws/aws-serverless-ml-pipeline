@@ -99,10 +99,10 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
 ### Advance Concepts
 
-1. **How do I 
-1. **How do I modify or replace the CodePipeline CI/CD backbone?**
+1. **How do I change the configurations such as the algorithm and hyperparameters used by the provided ML pipeline?**
 
 2. **How do I modify or replace the CodePipeline CI/CD backbone?**
+
 
 ### Known Issues
 
