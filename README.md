@@ -25,6 +25,8 @@ This project is open-source, and is open to contributions that add value to our 
 
 ---
 
+### How does the provided pipeline work?
+
 The provided pipeline consists of five main steps:
 
 <img src="images/codepipeline-cicd.png" width="80%"/>
