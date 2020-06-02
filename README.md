@@ -7,9 +7,10 @@ The solution can be automatically deployed into your account using [CloudFormati
 
 ### What does it do?
 
-The following diagram is a logical archictecture for the solution. 
+The following diagram is the logical archictecture of the solution. 
 
 ![architecture](/images/logical-architecture.png)
+
 
 
 ---
