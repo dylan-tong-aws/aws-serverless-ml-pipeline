@@ -11,7 +11,13 @@ The following diagram is the logical archictecture of the solution.
 
 ![architecture](/images/logical-architecture.png)
 
+Operational and pipelining processes vary greatly across projects and organizations by design. The pipeline design provided out-of-the-box is meant to serve as a boiler-plate. This solution is not meant to be a turnkey solution for enterprises.
 
+Some organizations will need to re-design the pipeline to meet their requirements. Enhancements such as multi-account support will be necessary for many enterprises. 
+
+The provided pipeline should be simple enough to serve as a learning tool and a starting point to evolve your solution. Trek8's Enterprise CI/CD [Quick-start](https://github.com/aws-quickstart/quickstart-trek10-serverless-enterprise-cicd) is a good example of something closer to an Enterprise turn-key solution. However, the multi-account design makes it harder to deploy. One of the goals of this solution is to enable a working system in your AWS environment with a few simple steps.
+
+Refer to the advance section below for more details on how to re-design and configure the various components in this solution.
 
 ---
 
