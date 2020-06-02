@@ -29,11 +29,20 @@ The pipeline consists of five main steps:
 
 5. **Deploy to Production:** Once the test completes, a manual approval process is required before the changes are deployed into production. Test results can be reported externally or as output variables in CodePipeline. Information gathered in SageMaker Experiments and CloudWatch are also valuable. Once the approver reviews and approves the changes, training and test results, the pipeline deploys the changes into production using this [template](cf/mlops-deploy-prod.yaml). The provided template deploys a new copy of the simple microservice. This is optionally deployed into a VPC with a [VPC endpoint](https://docs.aws.amazon.com/sagemaker/latest/dg/interface-vpc-endpoint.html). The API managed by API Gateway is promoted to production using a [carnary deploy](https://docs.aws.amazon.com/apigateway/latest/developerguide/create-canary-deployment.html). Finally, a SageMaker [Model Monitor](https://docs.aws.amazon.com/sagemaker/latest/dg/model-monitor.html) is deployed and is scheduled to evaluate data drift issues on an hourly basis.
 
+### Design Patterns and Best Practices
+
+The provided design isn't the only way to integrate your ML pipeline into an existing CI/CD CodePipeline. You could alternative have all your workflows orchestrated by AWS Step Functions and have both CodePipeline and the ML Pipeline contained within a Step Function workflow.
+
+This design provides the benefit of better consistency. However, there're trade-offs. The above design better decouples the CI/CD pipeline from the ML pipeline. This is ideal for the common case where a CI/CD pipeline already exists and you would like to minimize changes to your core application delivery system. This design augments the existing CI/CD pipeline with a ML pipeline that runs in Step Functions with minimal coupling and dependencies between the systems. Thus, this integration strategy poses less risks and disruption.
+
+Secondly, at this point in time, Step Functions is best design to orchestrate systems running exclusively in the AWS cloud. The design pattern prescribed is more flexible. You could replace the CodePipeline backbone in this solution with an on-premise CI/CD solution. The other parts of the pipeline are decoupled and could run in the cloud as part of a hybrid cloud architecture.
+
 ### Quick-start Instructions
 
 *Pre-requesites*:
 * [An AWS Account](https://aws.amazon.com/free/?all-free-tier.sort-by=item.additionalFields.SortRank&all-free-tier.sort-order=asc)
 * [AWS CLI installed](https://aws.amazon.com/cli/)
+* [Setup SSH connections for CodeCommit](https://docs.aws.amazon.com/codecommit/latest/userguide/setting-up-ssh-unixes.html)
 
 **Step 1:** Deploy the CodePipeline CI/CD pipeline back-bone
 
@@ -42,6 +51,24 @@ The pipeline consists of five main steps:
 ![launch stack button](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)</a>
 
 
-**Step 2:** Wait for the 
+**Step 2:** Wait for template to reach the create complete status.
 
-test
+![cicd](/images/cf-stack-ready.png)
+
+**Step 3:** Trigger your pipeline to run
+
+If you're running on a Mac OS, you can simply download and run this [shell script](https://raw.githubusercontent.com/dylan-tong-aws/aws-serverless-ml-pipeline/master/bootstrap/quick-start-mac-osx.sh).
+
+If not, git clone this repository and git push all the assets to the CodeCommit repository created in step 1. By default, the CodeCommit repository is called mlops-repo. 
+
+Specifically, the steps are:
+
+1. git clone https://github.com/dylan-tong-aws/aws-serverless-ml-pipeline.git ./tmp
+2. git clone ssh://git-codecommit.$region.amazonaws.com/v1/repos/mlops-repo
+3. Copy the contents in the "tmp" directory to the "mlops-repo" directory.
+4. From within the mlops-repo directory:
+     * git add -A
+     * git commit -m "aws ml pipeline assets"
+     * git push
+
+You can monitor the pipeline progression from the CodePipeline and AWS Step Functions console. Enjoy!
