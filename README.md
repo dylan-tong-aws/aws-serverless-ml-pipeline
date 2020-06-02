@@ -1,5 +1,5 @@
 # AWS Serverless: Continuous ML Pipeline
-author: [Dylan Tong](mailto:dylatong@amazon.com)
+Author: [Dylan Tong](mailto:dylatong@amazon.com)
 
 This is a framework for continuous machine learning pipeline automation on AWS. It provides an out-of-the-box integration of AWS serverless components and builds on top of the capabilities provided by services like CodePipeline and the Step Functions Data Science SDK. The framework is designed to be extensible and facilitate a low-code approach to ML pipeline automation.
 
