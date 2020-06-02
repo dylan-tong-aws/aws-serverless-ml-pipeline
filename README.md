@@ -169,3 +169,8 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 1. *[6/2/2020]* **Network communication between Lambda and SageMaker VPC interface endpoint**
 
      The provided template includes VPC support. However, at the time of writing, there is a network issue between AWS Lambda and the VPC interface endpoint that prevents communication between a Lambda function running in a VPC and a SageMaker hosted endpoint through a VPC interface endpoint. Consequently, communication between Lambda and the hosted endpoint needs to be public until this issue is fixed.
+
+### Acknowledgements
+
+A [sample data](sample-datasets/customer-churn.csv) was packaged with this solution to simplify the [Quick Start](Quick-Start-Instructions) process. This data set was first mentioned in a book [Discovering Knowledge in Data](https://www.amazon.com/dp/0470908742/) by Daniel T. Larose and is publicly available. It is attributed by the author to the [University of California Irvine Repository of Machine Learning Datasets](https://archive.ics.uci.edu/ml/index.php).
+
