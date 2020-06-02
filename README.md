@@ -101,6 +101,8 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
 1. **How do I change the configurations such as the algorithm and hyperparameters used by the provided ML pipeline?**
 
+The provided ML pipeline can be configured through the [ml-pipeline-config.json](/config/ml-pipeline-config.json) file. The configuration file includes configurations to change the algorithm, hyperparameters, endpoint name, experiment tracking, ETL configurations, data source location and more.
+
 2. **How do I modify or replace the CodePipeline CI/CD backbone?**
 
 
