@@ -1,4 +1,4 @@
-# AWS Serverless ML Pipeline
+# AWS Serverless: Continuous ML Pipeline
 author: [Dylan Tong](mailto:dylatong@amazon.com)
 
 This is a low-code AWS machine learning pipeline automation solution built on AWS serverless components. 
@@ -99,6 +99,10 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
 ### Advance Concepts
 
+1. **How do I 
+1. **How do I modify or replace the CodePipeline CI/CD backbone?**
+
+2. **How do I modify or replace the CodePipeline CI/CD backbone?**
 
 ### Known Issues
 
