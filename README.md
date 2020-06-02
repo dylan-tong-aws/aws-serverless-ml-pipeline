@@ -1,7 +1,7 @@
 # AWS Serverless ML Pipeline
 author: [Dylan Tong](mailto:dylatong@amazon.com)
 
-This is a low-code AWS machine learning pipeline automation solution build on AWS serverless components. 
+This is a low-code AWS machine learning pipeline automation solution built on AWS serverless components. 
 
 The solution can be automatically deployed into your account using [CloudFormation](https://aws.amazon.com/cloudformation/). Quick-start instructions are provided below. The solution can be deployed and a working example can be launched with just a few steps.
 
