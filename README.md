@@ -46,6 +46,8 @@ Secondly, at this point in time, Step Functions is best design to orchestrate sy
 
 **Step 1:** Deploy the CodePipeline CI/CD pipeline back-bone
 
+*The launch button defaults to us-west-2, but you can change the region from the console.*
+
 <a href="https://console.aws.amazon.com/cloudformation/home?region=us-west-
 2#/stacks/new?stackName=mlops-cicd&templateURL=https://dtong-public-fileshare.s3-us-west-2.amazonaws.com/aws-ml-pipeline/cf/mlops-cicd.yaml">
 ![launch stack button](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)</a>
@@ -64,7 +66,7 @@ If not, git clone this repository and git push all the assets to the CodeCommit 
 Specifically, the steps are:
 
 1. git clone https://github.com/dylan-tong-aws/aws-serverless-ml-pipeline.git ./tmp
-2. git clone ssh://git-codecommit.$region.amazonaws.com/v1/repos/mlops-repo
+2. git clone ssh://git-codecommit.\<Insert Your Selected AWS Region\>.amazonaws.com/v1/repos/mlops-repo
 3. Copy the contents in the "tmp" directory to the "mlops-repo" directory.
 4. From within the mlops-repo directory:
      * git add -A
