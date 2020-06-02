@@ -13,7 +13,7 @@ The following diagram is the logical archictecture of the solution.
 
 Operational and pipelining processes vary greatly across projects and organizations by design. The pipeline design provided out-of-the-box is meant to serve as a boiler-plate. This is not a turnkey solution for enterprises.
 
-Some organizations will need to re-design the pipeline to meet their requirements. Enhancements such as multi-account support will be a requirement in some cases. 
+Some organizations will need to re-design the pipeline to meet their requirements. Enhancements such as multi-account support will be needed in some cases. 
 
 The out-of-the-box pipeline serves as a learning example--it should help a developer understand how to bring AWS's DevOps building blocks together for ML pipeline automation. It also provides a starting point for you to iterate on.
 
