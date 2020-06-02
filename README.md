@@ -7,12 +7,23 @@ The solution can be automatically deployed into your account using [CloudFormati
 
 ### What does it do?
 
-The following diagram is a logical archictecture for the solution. The pipeline consists of five main steps:
-
-1. **Change detection:**  
+The following diagram is a logical archictecture for the solution. 
 
 ![architecture](/images/logical-architecture.png)
 
+The pipeline consists of five main steps:
+
+1. **Change detection:** Changes to assets such as code, configurations and data can trigger the pipeline to run. Triggers include git pushes to the master branch in [CodeCommit](https://aws.amazon.com/codecommit/), or changes to data sets in your S3 bucket.
+
+2. **Build Test and Stage Environment:** The pipeline dynamically builds a test environment as defined by the provided CloudFormation templates. The environment consists of two parts: 
+
+      * The first is a machine learning pipeline built on AWS Step Functions. The purpose of the pipleine is to train, evaluate and deploy ML models. It can be reconfigured through the ML pipeline [template](/cf/mlops-ml-pipeline.yaml) and this [configuration file](/config/ml-pipeline-config.json)
+
+      * The second is the test environment consisting of your application and test suites. The environment can be configured through the following [template](/cf/mlops-test-env.yaml). The provided template deploys a simple microservice consisting of a [AWS Lambda](https://aws.amazon.com/lambda/) function front by [Amazon API Gateway](https://aws.amazon.com/api-gateway/). It communicates with the [Amazon SageMaker](https://aws.amazon.com/sagemaker/) hosted endpoint that is configured in the aforementationed [configuration file](/config/ml-pipeline-config.json). It also deploys a sample test suite that runs on Lambda.
+      
+3. **Run the ML Pipeline:** The provided
+
+[SFN-pipeline](/images/sfn-ml-pipeline.png)
 
 ### Quick-start Instructions
 
