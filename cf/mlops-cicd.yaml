@@ -28,6 +28,11 @@ Metadata:
           default: ML Pipeline Parameters
         Parameters:
           - pMLPipelineName
+      - Label:
+          default: Data Lake Parameters
+        Parameters:
+          - pDataStagingBucketName
+          - pDataStagingPrefix
     ParameterLabels:
       pCodePipelineName:
         default: CodePipeline CICD Name
@@ -55,6 +60,10 @@ Metadata:
         default: Use VPC
       pStagingBucketNamePrefix:
         default: Staging Bucket Name
+      pDataStagingBucket:
+        default: Data Staging Bucket Name
+      pDataStagingPrefix:
+        default: S3 Prefix for Data Staging Area
 Mappings:
   TrainingContainerRegionMap: 
     us-east-1: 
@@ -175,6 +184,28 @@ Parameters:
     MinLength: '1'
     Type: String
     Default: sample-ml-pipeline
+  pDataStagingBucketName:
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not
+      spaces. Must be unique within your account in an AWS Region.
+    Description: An existing S3 bucket that serves as the staging area for new incoming data. If left blank, the asset staging bucket will be used by default.
+    Default: "-Use Staging Bucket-"
+    Type: String  
+  pDataStagingPrefix:
+    AllowedPattern: '[A-Za-z0-9-/]{1,63}'
+    ConstraintDescription: >-
+      Maximum of 63 alphanumeric characters. Can include hyphens (-), but not
+      spaces. Must be unique within your account in an AWS Region.
+    Description: S3 prefix that serves as the staging area for new incoming data. This bucket will be monitored for changes.
+    MaxLength: '63'
+    MinLength: '1'
+    Default: 'mlops-staging/sample-datasets'
+    Type: String
+Conditions:
+  UseAssetStagingAsDataStage:
+    !Equals
+    - !Ref pDataStagingBucketName
+    - "-Use Staging Bucket-"
 Resources:
   GitRepo:
     Type: 'AWS::CodeCommit::Repository'
@@ -315,7 +346,7 @@ Resources:
       Stages:
         - Name: Source
           Actions:
-            - Name: SourceAction
+            - Name: CodeAndConfigUpdates
               ActionTypeId:
                 Category: Source
                 Owner: AWS
@@ -327,6 +358,21 @@ Resources:
                 BranchName: !Ref pBranchName
                 RepositoryName: !Ref RepositoryName
                 PollForSourceChanges: false
+              RunOrder: 1
+            - Name: DataUpdates
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: S3       
+              OutputArtifacts:
+                - Name: DataOutput
+              Configuration:  !If 
+              - UseAssetStagingAsDataStage
+              -  S3Bucket: !Ref StagingBucket
+                 S3ObjectKey: !Ref pDataStagingPrefix
+              -  S3Bucket: !Ref pDataStagingBucketName
+                 S3ObjectKey: !Ref pDataStagingPrefix
               RunOrder: 1
         - Name: BuildTestEnvironment
           Actions:
@@ -524,6 +570,8 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Properties:
       BucketName: !Join ['', [!Ref pStagingBucketNamePrefix, !Ref 'AWS::AccountId']]
+      VersioningConfiguration:
+        Status: Enabled
   MLPipelineRunnerRole:
     Type: 'AWS::IAM::Role'
     Properties:
