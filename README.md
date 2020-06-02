@@ -19,7 +19,7 @@ The out-of-the-box pipeline serves as a learning example--it should help a devel
 
 Trek8's Enterprise CI/CD [Quick-start](https://github.com/aws-quickstart/quickstart-trek10-serverless-enterprise-cicd) is a good example of something that is closer to an enterprise turn-key solution. However, the multi-account design makes it harder to deploy. One of the goals of this solution is to enable a working system in your AWS environment with a [few simple steps](#Quick-Start-Instructions).
 
-Many of you will already have an existing CI/CD pipeline, and as described in the following section, you can replace the provided CI/CD backbone. Refer to the advance section below for more details on how to re-design, replace and configure the various components in this solution.
+Many of you will already have an existing CI/CD pipeline, and as described in the [following section](Common-Design-Patterns), you can replace the provided CI/CD backbone. Refer to the [Advanced Concepts](Advance-Concepts) section below for more details on how to re-design, replace and configure the various components in this solution.
 
 This project is open-source, and is open to contributions that add value to our community. Feel free to contact me if you have a valuable enhancement that you like to contribute to this project.
 
@@ -97,7 +97,7 @@ Specifically, the steps are:
 
 You can monitor the pipeline progression from the CodePipeline and AWS Step Functions console. Enjoy!
 
-### Advance Concepts
+### Advanced Concepts
 
 1. **How do I change the configurations such as the algorithm and hyperparameters used by the provided ML pipeline?**
 
