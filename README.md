@@ -83,7 +83,7 @@ Secondly, at the time of writing, Step Functions is best design to orchestrate s
 
 **Step 1:** Deploy the CodePipeline CI/CD pipeline back-bone
 
-*The launch button defaults to us-west-2, but you can change the region from the console.*
+Click on the launch button. Provide a stack name and the rest of the fields can be left with the default values. The launch button defaults to us-west-2, but you can change the region from the console.
 
 <a href="https://console.aws.amazon.com/cloudformation/home?region=us-west-
 2#/stacks/new?stackName=mlops-cicd&templateURL=https://dtong-public-fileshare.s3-us-west-2.amazonaws.com/aws-ml-pipeline/cf/mlops-cicd.yaml">
