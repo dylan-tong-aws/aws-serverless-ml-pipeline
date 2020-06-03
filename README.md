@@ -46,8 +46,7 @@ The provided pipeline consists of five main steps:
 
       * The first is a machine learning pipeline built on AWS Step Functions. The purpose of the pipleine is to train, evaluate and deploy ML models. It can be reconfigured through the ML pipeline [template](/cf/mlops-ml-pipeline.yaml) and this [configuration file](/config/ml-pipeline-config.json)
 
-      * The second is the test environment consisting of your application and test suites. The environment can be configured through the following [template](/cf/mlops-test-env.yaml). The provided template deploys a simple microservice consisting of a [AWS Lambda](https://aws.amazon.com/lambda/) function front by [Amazon API Gateway](https://aws.amazon.com/api-gateway/). It communicates with the [Amazon SageMaker](https://aws.amazon.com/sagemaker/) hosted endpoint that is configured in the aforementationed [configuration file](/config/ml-pipeline-config.json). It also deploys a sample test suite that runs on Lambda.
-      
+      * The second is the test environment consisting of your application and test suites. The environment can be configured through the following [template](/cf/mlops-test-env.yaml). The provided template deploys a simple microservice consisting of a [AWS Lambda](https://aws.amazon.com/lambda/) function front by [Amazon API Gateway](https://aws.amazon.com/api-gateway/). It communicates with the [Amazon SageMaker](https://aws.amazon.com/sagemaker/) hosted endpoint that is configured in the aforementationed [configuration file](/config/ml-pipeline-config.json). It also deploys a sample test suite that runs on Lambda.   
       
 3. **Run the ML Pipeline:** The image below illustrates the the Step function workflow of the provided ML pipeline. The pipeline starts with a data prep step executed by [AWS Glue](https://aws.amazon.com/glue/). Next, a customer churn prediction model is trained using XGBoost and this job is tracked as by [SageMaker Experiments](https://aws.amazon.com/sagemaker/) for traceability. The train model is evaluated, and if it meets the performance criteria, the workflow proceeds to deploy the model as a SageMaker [Hosted Endpoint](https://docs.aws.amazon.com/sagemaker/latest/dg/how-it-works-hosting.html). The worfklow completes successfully once the hosted endpoint reaches an in-service status. If the endpoint already exists, a model variant is deployed and the endpoint is updated.
 
@@ -56,6 +55,7 @@ The provided pipeline consists of five main steps:
 
 4. **Test Automation:** Once the ML pipeline delivers a healthy model server, we can run our test suites against our model server. The provided [test](tests/) is only meant to serve as an example. It simply invokes the endpoint and reports back the predicton results.
 
+      CodePipeline also has integrations with 3rd-party [QA automation software](https://aws.amazon.com/codepipeline/product-integrations/#Test). You can follow the [instructions](#How-do-I-modify-or-replace-the-CodePipeline-CI/CD-backbone?) provided below to modify the CI/CD backbone and integrate these solutions into your test process.
 
 5. **Deploy to Production:** Once the test completes, a manual approval process is required before the changes are deployed into production. Test results can be reported externally or as output variables in CodePipeline. Information gathered in SageMaker Experiments and CloudWatch also facilitate the audit. 
 
@@ -139,6 +139,8 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 4. **How do I modify and add test suites?**
 
      The pipeline provides a sample test and it is up to your to extend and implement your relevant automated tests. The CI/CD pipeline runs a Lambda function called mlops-test-runner(/tests/mlops-test-runner.zip). You should modify this Lambda function so that it serves as a starting point to run your tests. For instance, you might choose to have this Lambda function kick-off a Step Function workflow that orchestrates the execution of your tests. Alternatively, this Lambda function might kick off a series of tests running as containerized workloads in [Fargate](https://aws.amazon.com/fargate/). The design and implementation is left to you.
+     
+           CodePipeline also has integrations with 3rd-party [QA automation software](https://aws.amazon.com/codepipeline/product-integrations/#Test). You can follow the [instructions](#How-do-I-modify-or-replace-the-CodePipeline-CI/CD-backbone?) below to modify the CI/CD backbone and integrate these solutions into your test process.
 
 
 5. **How do I modify my test environment resources?**
