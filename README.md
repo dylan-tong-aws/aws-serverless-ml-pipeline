@@ -55,7 +55,8 @@ The provided pipeline consists of five main steps:
 
 4. **Test Automation:** Once the ML pipeline delivers a healthy model server, we can run our test suites against our model server. The provided [test](tests/) is only meant to serve as an example. It simply invokes the endpoint and reports back the predicton results.
 
-      CodePipeline also has integrations with 3rd-party [QA automation software](https://aws.amazon.com/codepipeline/product-integrations/#Test). You can follow the [instructions](#How-do-I-modify-or-replace-the-CodePipeline-CI/CD-backbone?) provided below to modify the CI/CD backbone and integrate these solutions into your test process.
+     CodePipeline also has integrations with 3rd-party [QA automation software](https://aws.amazon.com/codepipeline/product-integrations/#Test). You can follow the [instructions](#How-do-I-modify-or-replace-the-CodePipeline-CI/CD-backbone?) provided below to modify the CI/CD backbone and integrate these solutions into your test process.
+
 
 5. **Deploy to Production:** Once the test completes, a manual approval process is required before the changes are deployed into production. Test results can be reported externally or as output variables in CodePipeline. Information gathered in SageMaker Experiments and CloudWatch also facilitate the audit. 
 
@@ -140,7 +141,7 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
      The pipeline provides a sample test and it is up to your to extend and implement your relevant automated tests. The CI/CD pipeline runs a Lambda function called mlops-test-runner(/tests/mlops-test-runner.zip). You should modify this Lambda function so that it serves as a starting point to run your tests. For instance, you might choose to have this Lambda function kick-off a Step Function workflow that orchestrates the execution of your tests. Alternatively, this Lambda function might kick off a series of tests running as containerized workloads in [Fargate](https://aws.amazon.com/fargate/). The design and implementation is left to you.
      
-           CodePipeline also has integrations with 3rd-party [QA automation software](https://aws.amazon.com/codepipeline/product-integrations/#Test). You can follow the [instructions](#How-do-I-modify-or-replace-the-CodePipeline-CI/CD-backbone?) below to modify the CI/CD backbone and integrate these solutions into your test process.
+     CodePipeline also has integrations with 3rd-party [QA automation software](https://aws.amazon.com/codepipeline/product-integrations/#Test). You can follow the [instructions](#How-do-I-modify-or-replace-the-CodePipeline-CI/CD-backbone?) below to modify the CI/CD backbone and integrate these solutions into your test process.
 
 
 5. **How do I modify my test environment resources?**
