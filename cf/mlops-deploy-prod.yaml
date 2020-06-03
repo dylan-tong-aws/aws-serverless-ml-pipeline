@@ -242,7 +242,7 @@ Resources:
           - ''
           - - 's3://'
             - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
-            - "/mlops-staging/monitor-config/statistics.json"
+            - "/model-monitor/output"
       ImageURI: 
         !Join
          - ''
