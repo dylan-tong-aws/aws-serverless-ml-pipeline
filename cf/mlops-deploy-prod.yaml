@@ -38,7 +38,15 @@ Parameters:
     #Type: 'AWS::EC2::VPC::Id'
     Type: 'String'
     Default: "-- Required field only if deployed in a VPC --"
+  pModelMonitorS3URI:
+    Description: "Specify an existing bucket path that the model monitor can use to write results to."
+    Type: 'String'
+    Default: "-- Leave unchanged to use the staging bucket defined in your CICD stack--"
 Conditions:
+  NoModelMonitorS3UriProvided:
+    !Equals
+      - !Ref pModelMonitorS3URI
+      - "-- Leave unchanged to use the staging bucket defined in your CICD stack--"
   CreateVPCECondition:
     !And
       - !Equals
@@ -237,12 +245,13 @@ Resources:
             - "/mlops-staging/config/monitor-config/statistics.json"
       InputLocalPath: "/opt/ml/processing/endpointdata"
       OutputLocalPath: "/opt/ml/processing/localpath"
-      OutputS3URI: 
-        !Join 
+      OutputS3URI: !If
+        - NoModelMonitorS3UriProvided
+        - !Join 
           - ''
           - - 's3://'
             - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
-            - "/model-monitor/output"
+        - !Ref pModelMonitorS3URI
       ImageURI: 
         !Join
          - ''
@@ -266,6 +275,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonSageMakerFullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
   MicroserviceInProd:
     DependsOn:
       - MicroserviceRole

@@ -296,6 +296,9 @@ Resources:
                   "DataCaptureConfig": { 
                     "CaptureOptions": [ 
                       { 
+                        "CaptureMode": "Input"
+                      },
+                      { 
                         "CaptureMode": "Output"
                       }
                     ], 
