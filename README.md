@@ -20,7 +20,7 @@ Some organizations will need to re-design the pipeline to meet their requirement
 
 The out-of-the-box pipeline serves as a learning example--it should help a developer understand how to bring AWS's DevOps building blocks together for ML pipeline automation. It also provides a starting point for you to iterate on.
 
-Trek8's Enterprise CI/CD [Quick-start](https://github.com/aws-quickstart/quickstart-trek10-serverless-enterprise-cicd) is a good example of something closer to an enterprise turn-key CI/CD solution (note: it doesn't provide ML pipelining out-of-the-box). However, the multi-account design makes it harder to deploy. One of the goals of this solution is to enable a working system in your AWS environment with a [few simple steps](#Quick-Start-Instructions).
+Trek10's Enterprise CI/CD [Quick-start](https://github.com/aws-quickstart/quickstart-trek10-serverless-enterprise-cicd) is a good example of something closer to an enterprise turn-key CI/CD solution (note: it doesn't provide ML pipelining out-of-the-box). However, the multi-account design makes it harder to deploy. One of the goals of this solution is to enable a working system in your AWS environment with a [few simple steps](#Quick-Start-Instructions).
 
 Many of you will already have an existing CI/CD pipeline, and as described in the [following section](Common-Design-Patterns), you can replace the provided CI/CD backbone. Refer to the [Advanced Concepts](Advance-Concepts) section below for more details on how to re-design, replace and configure the various components in this solution.
 
@@ -66,7 +66,7 @@ The provided pipeline consists of five main steps:
 ### Common Design Patterns
 
 
-The choosen design isn't the only way to integrate a ML pipeline into an existing CI/CD CodePipeline. Another common pattern is to have AWS Step Functions serve as the overlaying workflow manager and have both CodePipeline and the ML pipelining enclosed within a single Step Function workflow. One might favor this design for better consistency and perhaps a cleaner design.
+The choosen design isn't the only way to integrate a ML pipeline into an existing CI/CD pipeline. Another common pattern is to have AWS Step Functions serve as the overlaying workflow manager and have both CodePipeline and the ML pipelining enclosed within a single Step Function workflow. One might favor this design for better consistency and perhaps a cleaner design.
 
 However, there are trade-offs. The choosen design better decouples the CI/CD pipeline from the ML pipeline. This is ideal for the common case where a CI/CD pipeline already exists and you would like to minimize changes to your core application delivery system. This design augments the existing CI/CD pipeline with Step Function workflow. The integration between the CI/CD pipeline and Step Functions is simply a Lambda function that provides control flow logic. The coupling and dependencies are minimized between the systems. Thus, this integration strategy poses less risks and disruption.
 
@@ -134,12 +134,12 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
      The provided pipeline deploys a simple microservice. It consists of an API that takes features as input and responds with a prediction. The back-end logic is executed in Lambda and it's sole responsibility is to mediate communication between the SageMaker hosted model and the client. You can enhance the microservice by modifying the [business logic](app/simple-microservice.zip). There're API definitions managed by API Gateway for both test and production environments. These environments are defined in [mlops-test-env.yaml](/cf/mlops-test-env.yaml) and [mlops-deploy-prod.yaml](/cf/mlops-deploy-prod.yaml). 
 
-     AppApiInTest(/cf/mlops-test-env.yaml) and the AppAPIInProd(/cf/mlops-deploy-prod.yaml) are the logical identifiers in these respective templates. The API definitions are defined in swagger 2.0 format.
+     [AppApiInTest](/cf/mlops-test-env.yaml) and the [AppAPIInProd](/cf/mlops-deploy-prod.yaml) are the logical identifiers in these respective templates. The API definitions are defined in swagger 2.0 format.
 
 
 4. **How do I modify and add test suites?**
 
-     The pipeline provides a sample test and it is up to your to extend and implement your relevant automated tests. The CI/CD pipeline runs a Lambda function called mlops-test-runner(/tests/mlops-test-runner.zip). You should modify this Lambda function so that it serves as a starting point to run your tests. For instance, you might choose to have this Lambda function kick-off a Step Function workflow that orchestrates the execution of your tests. Alternatively, this Lambda function might kick off a series of tests running as containerized workloads in [Fargate](https://aws.amazon.com/fargate/). The design and implementation is left to you.
+     The pipeline provides a sample test and it is up to your to extend and implement your relevant automated tests. The CI/CD pipeline runs a Lambda function called [mlops-test-runner](/tests/mlops-test-runner.zip). You should modify this Lambda function so that it serves as a starting point to run your tests. For instance, you might choose to have this Lambda function kick-off a Step Function workflow that orchestrates the execution of your tests. Alternatively, this Lambda function might kick off a series of tests running as containerized workloads in [Fargate](https://aws.amazon.com/fargate/). The design and implementation is left to you.
      
      CodePipeline also has integrations with 3rd-party [QA automation software](https://aws.amazon.com/codepipeline/product-integrations/#Test). You can follow the [instructions](#How-do-I-modify-or-replace-the-CodePipeline-CI/CD-backbone?) below to modify the CI/CD backbone and integrate these solutions into your test process.
 
