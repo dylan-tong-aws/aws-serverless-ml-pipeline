@@ -134,12 +134,12 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
      The provided pipeline deploys a simple microservice. It consists of an API that takes features as input and responds with a prediction. The back-end logic is executed in Lambda and it's sole responsibility is to mediate communication between the SageMaker hosted model and the client. You can enhance the microservice by modifying the [business logic](app/simple-microservice.zip). There're API definitions managed by API Gateway for both test and production environments. These environments are defined in [mlops-test-env.yaml](/cf/mlops-test-env.yaml) and [mlops-deploy-prod.yaml](/cf/mlops-deploy-prod.yaml). 
 
-     AppApiInTest(/cf/mlops-test-env.yaml) and the AppAPIInProd(/cf/mlops-deploy-prod.yaml) are the logical identifiers in these respective templates. The API definitions are defined in swagger 2.0 format.
+     [AppApiInTest](/cf/mlops-test-env.yaml) and the [AppAPIInProd](/cf/mlops-deploy-prod.yaml) are the logical identifiers in these respective templates. The API definitions are defined in swagger 2.0 format.
 
 
 4. **How do I modify and add test suites?**
 
-     The pipeline provides a sample test and it is up to your to extend and implement your relevant automated tests. The CI/CD pipeline runs a Lambda function called mlops-test-runner(/tests/mlops-test-runner.zip). You should modify this Lambda function so that it serves as a starting point to run your tests. For instance, you might choose to have this Lambda function kick-off a Step Function workflow that orchestrates the execution of your tests. Alternatively, this Lambda function might kick off a series of tests running as containerized workloads in [Fargate](https://aws.amazon.com/fargate/). The design and implementation is left to you.
+     The pipeline provides a sample test and it is up to your to extend and implement your relevant automated tests. The CI/CD pipeline runs a Lambda function called [mlops-test-runner](/tests/mlops-test-runner.zip). You should modify this Lambda function so that it serves as a starting point to run your tests. For instance, you might choose to have this Lambda function kick-off a Step Function workflow that orchestrates the execution of your tests. Alternatively, this Lambda function might kick off a series of tests running as containerized workloads in [Fargate](https://aws.amazon.com/fargate/). The design and implementation is left to you.
      
      CodePipeline also has integrations with 3rd-party [QA automation software](https://aws.amazon.com/codepipeline/product-integrations/#Test). You can follow the [instructions](#How-do-I-modify-or-replace-the-CodePipeline-CI/CD-backbone?) below to modify the CI/CD backbone and integrate these solutions into your test process.
 
