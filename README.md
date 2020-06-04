@@ -66,7 +66,7 @@ The provided pipeline consists of five main steps:
 ### Common Design Patterns
 
 
-The choosen design isn't the only way to integrate a ML pipeline into an existing CI/CD CodePipeline. Another common pattern is to have AWS Step Functions serve as the overlaying workflow manager and have both CodePipeline and the ML pipelining enclosed within a single Step Function workflow. One might favor this design for better consistency and perhaps a cleaner design.
+The choosen design isn't the only way to integrate a ML pipeline into an existing CI/CD pipeline. Another common pattern is to have AWS Step Functions serve as the overlaying workflow manager and have both CodePipeline and the ML pipelining enclosed within a single Step Function workflow. One might favor this design for better consistency and perhaps a cleaner design.
 
 However, there are trade-offs. The choosen design better decouples the CI/CD pipeline from the ML pipeline. This is ideal for the common case where a CI/CD pipeline already exists and you would like to minimize changes to your core application delivery system. This design augments the existing CI/CD pipeline with Step Function workflow. The integration between the CI/CD pipeline and Step Functions is simply a Lambda function that provides control flow logic. The coupling and dependencies are minimized between the systems. Thus, this integration strategy poses less risks and disruption.
 
