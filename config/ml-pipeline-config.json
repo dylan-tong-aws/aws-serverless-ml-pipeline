@@ -11,7 +11,7 @@
     "ModelS3Path": "{}/model",
     "TrainDataS3Path": "{}/train/",
     "ValidationDataS3Path": "{}/validation/",
-    "DataCaptureS3Path": "{}/capture/",
+    "DataCaptureS3Path": "{}/capture",
     "MLPipelineControllerName": "ml-pipeline-controller",
     "ModelName": "customer-churn-xgb",
     "InferenceEPName": "customer-churn-xgb-ep",

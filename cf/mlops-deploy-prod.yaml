@@ -251,6 +251,7 @@ Resources:
           - ''
           - - 's3://'
             - Fn::ImportValue: !Sub "${pCICDStack}-StagingBucket"
+            - '/reports'
         - !Ref pModelMonitorS3URI
       ImageURI: 
         !Join
