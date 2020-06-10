@@ -1,4 +1,4 @@
-This is a desired list of enhancements, which hasn't been ordered by priority:
+This is a desired list of enhancements. It's not currently ordered by priority:
 
 1. Build data drift monitoring baseline as part of the training process.
 2. Deploy a seperate endpoint as part of the production deployment.
