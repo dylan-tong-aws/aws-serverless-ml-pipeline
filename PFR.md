@@ -10,3 +10,5 @@ This is a desired list of enhancements, which hasn't been ordered by priority:
 6. Implement better granular pipeline triggers, so that only selective files trigger pipeline runs.
 7. Provide reporting capabilities to unify code and model lineage currently tracked by disparate systems: CodeCommit and SageMaker Experiments.
 8. Provide simplified end-to-end rollback UX. 
+9. Add more drop in ML pipeline templates eg. HPO
+10. Replace the default ml pipeline training step with an Autopilot job once it is supported by the Data Science SDK.
