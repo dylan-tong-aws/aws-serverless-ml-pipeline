@@ -115,7 +115,7 @@ Specifically, the steps are:
 You can monitor the pipeline progression from the CodePipeline and AWS Step Functions console. Enjoy!
 
 
-### Advanced Concepts
+### FAQ
 
 
 1. **How do I change the configurations such as the algorithm and hyperparameters used by the provided ML pipeline?**
@@ -167,6 +167,13 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
      
      If you want to replace CodePipeline as the CI/CD backbone, you could integrate your alternative CI/CD solution using the same or similar strategy employed in this example. Ultimately, your solution needs to be able to make API calls to AWS Lambda and CloudFormation to orchestrate the other parts of this pipeline. The provided assets and design could be re-used and serve as a reference.
      
+9. At what stage in a ML project lifecycle am I meant to use this solution?
+
+     This solution was designed to productionize machine learning pipelines. It's meant to be used for production and is likely too heavyweight for use during development.
+
+     <img src="images/ml-lifecycle.png" width="80%"/>
+
+Refer to this blog [post](https://aws.amazon.com/blogs/apn/how-slalom-and-wordstream-used-mlops-to-unify-machine-learning-and-devops-on-aws/) to learn more about the ML lifecycle.
 
 ### Known Issues
 
