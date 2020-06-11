@@ -1,10 +1,10 @@
 # AWS Serverless: Continuous ML Pipeline
-Author: [Dylan Tong](mailto:dylatong@amazon.com)
+*Interested in making a contribution? Contact: [Dylan Tong](mailto:dylatong@amazon.com)*
 
 
 This is a framework for continuous machine learning pipeline automation on AWS. It provides an out-of-the-box integration of AWS serverless components and builds on top of the capabilities provided by services like [AWS CodePipeline](https://aws.amazon.com/codepipeline/) and the [AWS Step Functions](https://aws.amazon.com/step-functions/) [Data Science SDK](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-python-sdk.html). The framework is designed to be extensible and facilitate a low-code approach to ML pipeline automation.
 
-The solution can be automatically deployed into your account using [CloudFormation](https://aws.amazon.com/cloudformation/). Quick-start instructions are provided below. The solution can be deployed and a working example can be launched with just a few steps.
+The solution can be automatically deployed into your account using [CloudFormation](https://aws.amazon.com/cloudformation/). [Quick-start](#Quick-Start-Instructions) instructions are provided below. The solution can be deployed and a working example can be launched with just a few steps.
 
 
 ### What does it do?
@@ -121,6 +121,8 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 1. **How do I change the configurations such as the algorithm and hyperparameters used by the provided ML pipeline?**
 
      The provided ML pipeline can be configured through the [ml-pipeline-config.json](/config/ml-pipeline-config.json) file. The configuration file includes configurations to change the algorithm, hyperparameters, endpoint name, experiment tracking, ETL configurations, data source location and more.
+     
+     The [data prep](/config/spark-etl.py) script can also be modified. The provided ML pipeline uses AWS Glue, so the script has to be written for Spark and the supported context.
 
 
 2. **How do I modify or replace the workflow structure of the machine learning pipeline?**
