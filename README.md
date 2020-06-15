@@ -136,7 +136,7 @@ You can monitor the pipeline progression from the CodePipeline and AWS Step Func
 
      The provided pipeline deploys a simple microservice. It consists of an API that takes features as input and responds with a prediction. The back-end logic is executed in Lambda and it's sole responsibility is to mediate communication between the SageMaker hosted model and the client. You can enhance the microservice by modifying the [business logic](app/simple-microservice.zip). There're API definitions managed by API Gateway for both test and production environments. These environments are defined in [mlops-test-env.yaml](/cf/mlops-test-env.yaml) and [mlops-deploy-prod.yaml](/cf/mlops-deploy-prod.yaml). 
 
-     [AppApiInTest](/cf/mlops-test-env.yaml) and the [AppAPIInProd](/cf/mlops-deploy-prod.yaml) are the logical identifiers in these respective templates. The API definitions are defined in swagger 2.0 format.
+     [AppApiInTest](/cf/mlops-test-env.yaml) and the [AppApiInProd](/cf/mlops-deploy-prod.yaml) are the logical identifiers in these respective templates. The API definitions are defined in swagger 2.0 format.
 
 
 4. **How do I modify and add test suites?**
