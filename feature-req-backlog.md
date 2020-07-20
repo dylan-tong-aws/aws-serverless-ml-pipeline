@@ -3,7 +3,7 @@ This is a desired list of enhancements. It's not currently ordered by priority:
 1. Build data drift monitoring baseline as part of the training process.
 2. Deploy a seperate endpoint as part of the production deployment.
 3. Track and fix data capture issue.
-4. Track and fix VPC endpoint issues. (https://t.corp.amazon.com/P35965298/overview)
+4. Track and fix VPC endpoint issues.
 5. General UX improvements:
       * Configuration interface.
       * ...
