@@ -4,13 +4,17 @@
 
 This is a framework for continuous machine learning pipeline automation on AWS. It provides an out-of-the-box integration of AWS serverless components and builds on top of the capabilities provided by services like [AWS CodePipeline](https://aws.amazon.com/codepipeline/) and the [AWS Step Functions](https://aws.amazon.com/step-functions/) [Data Science SDK](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-python-sdk.html). The framework is designed to be extensible and facilitate a low-code approach to ML pipeline automation.
 
+The design of the system is as follows:
+
+![architecture](/images/continuous-ml-logical-design.png)
+
 The solution can be automatically deployed into your account using [CloudFormation](https://aws.amazon.com/cloudformation/). [Quick-start](#Quick-Start-Instructions) instructions are provided below. The solution can be deployed and a working example can be launched with just a few steps.
 
 
 ### What does it do?
 
 
-The following diagram is the logical architecture of the solution. 
+The following diagram illustrates the conceptual architecture for this solution. 
 
 ![architecture](/images/logical-architecture.png)
 
