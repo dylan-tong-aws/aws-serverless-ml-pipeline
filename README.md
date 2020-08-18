@@ -1,3 +1,5 @@
+The new home for this repository will be: https://github.com/aws-samples/serverless-cicd-ml-pipelines
+
 # AWS Serverless: Continuous ML Pipeline
 *Interested in making a [contribution](CONTRIBUTING.md)?*
 
